@@ -1,0 +1,65 @@
+version: '3.7'
+
+services:
+  prometheus:
+    image: prom/prometheus
+#    user: '1000:1000'
+    container_name: prometheus
+    volumes:
+      - /home/cubeboy/work/prometheus/etc:/etc
+    ports:
+      - 9090:9090
+#    command:
+#      - '--web.enable-lifecycle'
+#      - '--config.file=/etc/prometheus/prometheus.yml'
+#    restart: always
+#    networks:
+#      - promnet
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    volumes:
+      - /home/cubeboy/work/prometheus/grafana:/var/lib/grafana
+    ports:
+      - 3000:3000
+
+  node_exporter:
+    image: quay.io/prometheus/node-exporter:latest
+    container_name: node_exporter
+    command:
+      - '--path.rootfs=/host'
+#    network_mode: host
+#    pid: host
+    ports:
+      - 9100:9100
+    restart: unless-stopped
+    volumes:
+      - '/home/cubeboy/work/prometheus:/host:ro,rslave'
+#    networks:
+#      - promnet
+
+  loki:
+    image: grafana/loki
+    ports:
+      - "3100:3100"
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - /home/cubeboy/work/prometheu/etc/loki/loki
+#    networks:
+#      - loki
+
+  promtail:
+    image: grafana/promtail
+    volumes:
+      - /home/cubeboy/docker/logs:/var/lib/docker/containers
+      - /home/cubeboy/work/prometheus/etc/loki/docker-config.yml:/etc/promtail/docker-config.yml
+    command: -config.file=/etc/promtail/docker-config.yml
+#    networks:
+#      - loki
+
+
+networks:
+  default:
+    external:
+      name: microservice_net
